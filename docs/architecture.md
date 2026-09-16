@@ -99,3 +99,58 @@ ChatGoogleGenerativeAI
 Gemini API
         ↓
 Respuesta
+
+## Estrategia de pruebas
+
+El proyecto separará pruebas unitarias de pruebas de integración.
+
+### Tests unitarios
+
+Validan lógica interna sin depender de servicios externos.
+
+Deben ser:
+
+- rápidos;
+- deterministas;
+- ejecutables sin conexión a Internet;
+- independientes del proveedor del LLM.
+
+### Tests de integración
+
+Validan la comunicación real entre componentes externos.
+
+La integración con Gemini se valida mediante:
+
+`tests/integration/test_llm_connection.py`
+
+El test comprueba el recorrido:
+
+Python
+→ client.py
+→ LangChain
+→ Gemini API
+→ respuesta
+
+Los tests de integración se identifican con:
+
+`@pytest.mark.integration`
+
+y están desactivados por defecto para evitar llamadas
+innecesarias a servicios externos.
+
+Para habilitarlos:
+
+`RUN_INTEGRATION_TESTS=1`
+
+### Modelo inicial
+
+Para el MVP local se utiliza:
+
+`gemini-2.5-flash-lite`
+
+La creación y configuración del modelo está encapsulada en:
+
+`src/cne_agent/llm/client.py`
+
+Esto permite sustituir el proveedor o modelo sin modificar
+las reglas del dominio.
