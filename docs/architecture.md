@@ -154,3 +154,13 @@ La creación y configuración del modelo está encapsulada en:
 
 Esto permite sustituir el proveedor o modelo sin modificar
 las reglas del dominio.
+
+LCEL será utilizado para componer los pipelines deterministas de IA —especialmente prompts, RAG y procesamiento de respuestas—. LangGraph será utilizado posteriormente para orquestar los diferentes caminos del agente, mantener estado y decidir cuándo ejecutar las chains de LCEL o las herramientas MCP. El historial enviado al LLM será controlado con trim_messages, conservando las instrucciones del sistema y priorizando los turnos recientes.
+
+
+
+El chatbot utilizará few-shot prompting con un conjunto reducido de ejemplos fijos para reforzar comportamientos críticos. Los ejemplos se utilizarán para guiar estilo, manejo de ambigüedad y límites del asistente, pero no como fuente de datos del negocio. El conocimiento factual será recuperado mediante RAG.
+
+
+
+Las chains LCEL utilizarán Output Parsers según el propósito de la salida. StrOutputParser se utilizará para respuestas conversacionales destinadas al usuario, mientras que las decisiones y datos consumidos por la aplicación usarán salidas estructuradas y validadas, preferiblemente mediante modelos Pydantic.
