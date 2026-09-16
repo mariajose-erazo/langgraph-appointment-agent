@@ -58,7 +58,7 @@ Exposición de herramientas del sistema mediante MCP.
 - fecha;
 - hora;
 - confirmación pendiente;
-- contexto de conversación.
+- contexto de conversación.s
 
 ## 5. Flujo general
 
@@ -72,3 +72,30 @@ Usuario
 ## 6. Decisiones pendientes
 
 Se documentarán durante el desarrollo.
+
+## 7. Plan de implementación
+
+### Etapa 1 — Conexión con el LLM
+
+Objetivo:
+Conectar la aplicación con un modelo Gemini mediante LangChain y validar
+que podemos enviar un mensaje y recibir una respuesta.
+
+Componentes:
+
+- Gemini API como proveedor del modelo.
+- LangChain como capa de integración.
+- Variables de entorno para proteger la API key.
+- Prueba mínima mediante `invoke()`.
+
+Flujo:
+
+Usuario / código Python
+        ↓
+LangChain
+        ↓
+ChatGoogleGenerativeAI
+        ↓
+Gemini API
+        ↓
+Respuesta
