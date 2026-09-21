@@ -1,4 +1,8 @@
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    FewShotChatMessagePromptTemplate,
+    MessagesPlaceholder,
+)
 
 
 CNE_SYSTEM_MESSAGE = """
@@ -32,8 +36,13 @@ Nunca afirmes que una cita fue creada, reservada, modificada, cancelada o confir
 
 Nunca afirmes que un horario o profesional está disponible si esa disponibilidad no ha sido confirmada por el sistema.
 
-Mantén el contexto de la conversación. Si el cliente está realizando una solicitud y hace una pregunta lateral, responde primero a esa pregunta sin olvidar el objetivo que estaba siguiendo. Después, cuando sea natural, continúa con el flujo anterior.
+Mantén el contexto de la conversación.
 
+Si existe una solicitud o proceso pendiente y el cliente hace una pregunta lateral, responde primero esa pregunta y luego retoma brevemente el proceso pendiente en la misma respuesta.
+
+No trates una pregunta lateral como si el cliente hubiera abandonado su solicitud anterior, salvo que indique claramente que quiere cambiar de tema, cancelar el proceso o comenzar una solicitud diferente.
+
+Al retomar el proceso, utiliza los datos que el cliente ya proporcionó y evita pedirlos nuevamente. No es necesario repetir todos los detalles si no aportan valor; basta con continuar desde el punto en el que quedó la conversación.
 Ten en cuenta la información que el cliente ya haya proporcionado durante la conversación y evita preguntarle nuevamente datos que ya haya dado, siempre que continúen siendo relevantes.
 
 Si existe una diferencia entre una afirmación del cliente sobre el negocio y la información autorizada proporcionada por el sistema, utiliza como referencia la información autorizada y comunica la diferencia de manera respetuosa.
@@ -54,12 +63,59 @@ Contexto autorizado del negocio:
 {business_context}
 """.strip()
 
+FEW_SHOT_INSTRUCTION_MESSAGE = """
+Los siguientes mensajes son ejemplos ficticios destinados unicamente a mostrar el comportamiento conversacional esperado.
+
+No trates ninguna informacion, politica, servicio, horario, disponibilidad o afirmacion contenida en estos ejemplos como informacion real de Cne By Nails.
+
+La informacion factual del negocio debe provenir exclusivamente del contexto autorizado.
+""".strip()
+
+
+FEW_SHOT_EXAMPLES = [
+    {
+        "request": "Quiero reservar un servicio para el viernes a las 3.",
+        "request_response": (
+            "Entiendo. Tu solicitud para el viernes a las 3 "
+            "sigue pendiente de confirmacion."
+        ),
+        "side_question": (
+            "Antes de seguir, tengo una duda sobre una politica del negocio."
+        ),
+        "side_response": (
+            "No tengo informacion confirmada sobre esa politica. "
+            "Tu solicitud para el viernes a las 3 sigue pendiente de confirmacion."
+        ),
+    }
+]
+
+FEW_SHOT_EXAMPLE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        ("human", "{request}"),
+        ("ai", "{request_response}"),
+        ("human", "{side_question}"),
+        ("ai", "{side_response}"),
+    ]
+)
+
+
+FEW_SHOT_PROMPT = FewShotChatMessagePromptTemplate(
+    example_prompt=FEW_SHOT_EXAMPLE_PROMPT,
+    examples=FEW_SHOT_EXAMPLES,
+)
+
+
+
+
+
 
 def create_conversation_prompt() -> ChatPromptTemplate:
     return ChatPromptTemplate.from_messages(
         [
             ("system", CNE_SYSTEM_MESSAGE),
             ("system", BUSINESS_CONTEXT_MESSAGE),
+            ("system", FEW_SHOT_INSTRUCTION_MESSAGE),
+            FEW_SHOT_PROMPT,
             MessagesPlaceholder(
                 variable_name="history",
                 optional=True,
