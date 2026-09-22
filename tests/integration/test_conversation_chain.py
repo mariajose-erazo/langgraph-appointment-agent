@@ -20,6 +20,9 @@ def test_conversation_chain_returns_string():
 Servicios ofrecidos por Cne By Nails:
 - Manicure semipermanente
 """,
+            "capabilities_context": """
+No hay capacidades operativas habilitadas actualmente.
+""",
             "history": [],
             "user_input": "Hola, que servicios ofrecen?",
         }

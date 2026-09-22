@@ -17,10 +17,8 @@ def test_conversation_prompt_formats_expected_messages():
 
     messages = prompt.format_messages(
         current_date="2026-09-17",
-        business_context="""
-Servicios ofrecidos:
-- Manicure semipermanente
-""",
+        business_context="""Servicios ofrecidos:- Manicure semipermanente""",
+        capabilities_context="""No hay capacidades operativas habilitadas actualmente.""",
         history=history,
         user_input="Se puede pagar en cuotas?",
     )
@@ -33,13 +31,17 @@ Servicios ofrecidos:
     assert isinstance(messages[1], SystemMessage)
     assert "Manicure semipermanente" in messages[1].content
 
-    # Instrucción que identifica el few-shot como ficticio
+    # Contexto de capacidades autorizadas
     assert isinstance(messages[2], SystemMessage)
-    assert "ejemplos ficticios" in messages[2].content.lower()
+    assert "capacidades operativas" in messages[2].content.lower()
+    assert "no hay capacidades operativas habilitadas" in messages[2].content.lower()
 
-    # El few-shot debe estar presente
+    assert isinstance(messages[3], SystemMessage)
+    assert "ejemplos ficticios" in messages[3].content.lower()
+
+    # Instrucción que identifica el few-shot como ficticio
     assert any(
-        "Quiero reservar un servicio para el viernes a las 3."
+        "Quiero continuar con una solicitud que todavía no ha sido confirmada."
         in message.content
         for message in messages
     )
@@ -68,12 +70,16 @@ def test_conversation_prompt_works_without_history():
     messages = prompt.format_messages(
         current_date="2026-09-17",
         business_context="""
-Servicios ofrecidos:
-- Manicure semipermanente
-""",
+    Servicios ofrecidos:
+    - Manicure semipermanente
+    """,
+        capabilities_context="""
+    No hay capacidades operativas habilitadas actualmente.
+    """,
         user_input="Hola, quiero informacion sobre manicure semipermanente.",
     )
-
+    assert isinstance(messages[2], SystemMessage)
+    assert "capacidades operativas" in messages[2].content.lower()
     assert isinstance(messages[0], SystemMessage)
     assert "2026-09-17" in messages[0].content
 
