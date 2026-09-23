@@ -2,6 +2,7 @@ from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
 
 from cne_agent.chains.conversation import create_conversation_chain
+from cne_agent.graph.history import trim_conversation_history
 from cne_agent.graph.state import ConversationContext, ConversationState
 
 
@@ -13,8 +14,12 @@ def conversation_node(
 
     messages = state["messages"]
 
-    history = messages[:-1]
+    full_history = messages[:-1]
     current_message = messages[-1]
+
+    history = trim_conversation_history(
+        full_history
+    )
 
     response = conversation_chain.invoke(
         {
