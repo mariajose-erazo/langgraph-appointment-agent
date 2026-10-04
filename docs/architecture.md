@@ -1,166 +1,106 @@
-# Arquitectura — Cne Nails AI Agent
+# CNE By Nails — Software Architecture
 
-## 1. Objetivo de la arquitectura
+## 1. Introducción y objetivos
 
-Este documento describe la arquitectura técnica planeada antes de comenzar
-la implementación del agente.
+### 1.1. Propósito
 
-## 2. Principios
+Este documento define la arquitectura de **CNE By Nails AI Agent**, un agente conversacional orientado a la atención al cliente y gestión de citas para un establecimiento de manicure y pedicure.
 
-- Separar las reglas del negocio de la inteligencia artificial.
-- No permitir que el LLM decida reglas deterministas de agenda.
-- Separar datos operacionales de conocimiento semántico.
-- Confirmar antes de ejecutar acciones que modifiquen datos.
-- Mantener los componentes reemplazables.
+Establece los componentes del sistema, sus responsabilidades, interacciones y decisiones técnicas, sirviendo como referencia para su desarrollo y evolución.
 
-## 3. Componentes previstos
+Distingue entre la arquitectura actual y la arquitectura objetivo.
 
-### LLM
-Gemini inicialmente.
+### 1.2. Problema del negocio
 
-### LangChain
-Integraciones con LLM, prompts, structured output y RAG.
+La gestión de citas requiere interpretar solicitudes, coordinar profesionales, verificar horarios y evitar conflictos de agenda.
 
-### LangGraph
-Orquestación del agente, estado de conversación y decisiones.
+El sistema busca automatizar estos procesos mediante conversaciones en lenguaje natural, manteniendo el cumplimiento de ...................................las reglas del negocio.
 
-### ChromaDB
-Base vectorial para conocimiento del negocio.
+### 1.3. Objetivo general
 
-### SQLite
-Base operacional para citas, profesionales, horarios y bloqueos.
+Desarrollar un agente conversacional capaz de interpretar solicitudes, mantener el contexto y gestionar citas mediante la integración de modelos de lenguaje, orquestación de flujos y lógica determinista.
 
-### FastMCP
-Exposición de herramientas del sistema mediante MCP.
+**Objetivos específicos:**
 
-## 4. Separación de información
+- Interpretar consultas, solicitudes y correcciones en lenguaje natural.
+- Mantener el contexto entre turnos de conversación.
+- Transformar solicitudes en datos estructurados y validados.
+- Aplicar reglas del negocio y consultar disponibilidad real.
+- Gestionar reservas y cancelaciones mediante integraciones autorizadas.
+- Responder preguntas utilizando información confiable del negocio.
 
-### SQLite
+### 1.4. Alcance del MVP
 
-- citas;
-- profesionales;
-- horarios;
-- bloqueos;
-- estados de citas.
+**Incluye:**
 
-### ChromaDB
+- Atención conversacional y consultas informativas.
+- Gestión de citas para servicios de manicure y pedicure.
+- Selección de profesional, fecha y hora.
+- Validación de horarios, duración, descansos y disponibilidad.
+- Creación y cancelación de reservas.
+- Propuesta de alternativas ante indisponibilidad.
 
-- servicios;
-- precios;
-- políticas;
-- preguntas frecuentes.
+**Excluye:**
 
-### Estado de LangGraph
+- Procesamiento de pagos y facturación.
+- Inventario y programas de fidelización.
+- Gestión de personal y nómina.
+- Penalizaciones por inasistencia.
+- Servicios fuera del alcance definido para el MVP.
 
-- intención actual;
-- servicio seleccionado;
-- profesional;
-- fecha;
-- hora;
-- confirmación pendiente;
-- contexto de conversación.s
+Las reglas operativas específicas se documentan en `domain-spec.md`.
 
-## 5. Flujo general
+### 1.5. Requisitos de calidad
 
-Usuario
-→ LangGraph
-→ decisión
-→ RAG o herramienta
-→ resultado
-→ respuesta al usuario
+- **Confiabilidad:** ninguna reserva se confirma sin validación y registro exitoso.
+- **Consistencia:** prevención de conflictos y reservas duplicadas.
+- **Mantenibilidad:** componentes modulares con responsabilidades definidas.
+- **Testabilidad:** reglas del negocio verificables independientemente del LLM.
+- **Extensibilidad:** incorporación de servicios, profesionales e integraciones con cambios localizados.
+- **Seguridad:** protección de datos y control de operaciones autorizadas.
+- **Observabilidad:** trazabilidad de operaciones, resultados y errores.
 
-## 6. Decisiones pendientes
+### 1.6. Principios y restricciones
 
-Se documentarán durante el desarrollo.
+- El LLM interpreta solicitudes, pero no decide ni ejecuta operaciones de negocio sin validación.
+- Python implementa las reglas deterministas.
+- La información operacional se consulta en fuentes confiables.
+- El dominio permanece independiente del proveedor de LLM y de las integraciones externas.
+- La implementación es incremental y respaldada por pruebas.
 
-## 7. Plan de implementación
+### 1.7. Estado del proyecto
 
-### Etapa 1 — Conexión con el LLM
+**Implementado:** componentes conversacionales con Gemini, LangChain y LangGraph; modelos y fusión de solicitudes de citas; reglas de agendamiento y pruebas asociadas.
 
-Objetivo:
-Conectar la aplicación con un modelo Gemini mediante LangChain y validar
-que podemos enviar un mensaje y recibir una respuesta.
+**En desarrollo:** interpretación estructurada de mensajes e integración con el estado de las solicitudes.
 
-Componentes:
+**Pendiente:** persistencia operacional, consulta de disponibilidad real y ejecución de reservas mediante integraciones externas.
+l
 
-- Gemini API como proveedor del modelo.
-- LangChain como capa de integración.
-- Variables de entorno para proteger la API key.
-- Prueba mínima mediante `invoke()`.
+## 4. Stack tecnológico
 
-Flujo:
+La arquitectura centralizará los servicios de inteligencia artificial en **Microsoft Foundry**, conservando Gemini como modelo de lenguaje actualmente implementado.
 
-Usuario / código Python
-        ↓
-LangChain
-        ↓
-ChatGoogleGenerativeAI
-        ↓
-Gemini API
-        ↓
-Respuesta
+Se utilizará Azure Cosmos DB for NoSQL como servicio unificado de persistencia operacional y almacenamiento vectorial para RAG, manteniendo ambas responsabilidades separadas lógicamente.
 
-## Estrategia de pruebas
+| Tecnología | Responsabilidad | Estado |
+|---|---|---|
+| **Python 3.11** | Lógica del negocio, modelos de datos y validaciones. | Implementado |
+| **Gemini** | Interpretación del lenguaje natural y generación de respuestas. | Implementado |
+| **LangChain / LCEL** | Composición de prompts y cadenas de procesamiento. | Implementado |
+| **LangGraph** | Orquestación y gestión del estado conversacional. | Implementado |
+| **Microsoft Foundry** | Plataforma de servicios de IA y acceso a modelos de embeddings. | Propuesto |
+| **Azure Cosmos DB for NoSQL** | Persistencia de citas, horarios y profesionales; almacenamiento e indexación vectorial para RAG. | Propuesto |
+| **FastMCP** | Exposición de herramientas de consulta y gestión de citas mediante MCP. | Propuesto |
+| **Foundry Observability** | Trazabilidad, monitoreo y evaluación del agente. | Propuesto |
+| **Pytest** | Pruebas unitarias y de integración. | Implementado |
 
-El proyecto separará pruebas unitarias de pruebas de integración.
+### 4.1. Criterios tecnológicos
 
-### Tests unitarios
+- **Centralización:** nuevos servicios de IA integrados mediante Microsoft Foundry.
+- **Desacoplamiento:** dominio independiente de los proveedores de IA e infraestructura.
+- **Separación de responsabilidades:** datos operacionales y conocimiento vectorial gestionados mediante módulos y contenedores independientes.
+- **Confiabilidad:** operaciones críticas validadas mediante Python y fuentes de información verificables.
+- **Evolución incremental:** incorporación de tecnologías según las necesidades del MVP.
 
-Validan lógica interna sin depender de servicios externos.
-
-Deben ser:
-
-- rápidos;
-- deterministas;
-- ejecutables sin conexión a Internet;
-- independientes del proveedor del LLM.
-
-### Tests de integración
-
-Validan la comunicación real entre componentes externos.
-
-La integración con Gemini se valida mediante:
-
-`tests/integration/test_llm_connection.py`
-
-El test comprueba el recorrido:
-
-Python
-→ client.py
-→ LangChain
-→ Gemini API
-→ respuesta
-
-Los tests de integración se identifican con:
-
-`@pytest.mark.integration`
-
-y están desactivados por defecto para evitar llamadas
-innecesarias a servicios externos.
-
-Para habilitarlos:
-
-`RUN_INTEGRATION_TESTS=1`
-
-### Modelo inicial
-
-Para el MVP local se utiliza:
-
-`gemini-2.5-flash-lite`
-
-La creación y configuración del modelo está encapsulada en:
-
-`src/cne_agent/llm/client.py`
-
-Esto permite sustituir el proveedor o modelo sin modificar
-las reglas del dominio.
-
-LCEL será utilizado para componer los pipelines deterministas de IA —especialmente prompts, RAG y procesamiento de respuestas—. LangGraph será utilizado posteriormente para orquestar los diferentes caminos del agente, mantener estado y decidir cuándo ejecutar las chains de LCEL o las herramientas MCP. El historial enviado al LLM será controlado con trim_messages, conservando las instrucciones del sistema y priorizando los turnos recientes.
-
-
-
-El chatbot utilizará few-shot prompting con un conjunto reducido de ejemplos fijos para reforzar comportamientos críticos. Los ejemplos se utilizarán para guiar estilo, manejo de ambigüedad y límites del asistente, pero no como fuente de datos del negocio. El conocimiento factual será recuperado mediante RAG.
-
-
-
-Las chains LCEL utilizarán Output Parsers según el propósito de la salida. StrOutputParser se utilizará para respuestas conversacionales destinadas al usuario, mientras que las decisiones y datos consumidos por la aplicación usarán salidas estructuradas y validadas, preferiblemente mediante modelos Pydantic.
+Las integraciones propuestas estarán sujetas a validación técnica, disponibilidad y costos antes de su implementación.
