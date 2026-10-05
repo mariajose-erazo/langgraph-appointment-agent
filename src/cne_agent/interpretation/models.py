@@ -41,6 +41,7 @@ class InterpretedChange(BaseModel):
     field: AppointmentField
     operation: ChangeOperation
     raw_text: str | None = None
+    raw_values: list[str] = Field(default_factory=list)
     suggested_id: str | None = None
 
     @model_validator(mode="after")
@@ -76,15 +77,40 @@ class InterpretedChange(BaseModel):
             )
 
         if self.operation is ChangeOperation.CLEAR:
-            if self.raw_text is not None or self.suggested_id is not None:
+            if (
+                self.raw_text is not None
+                or self.raw_values
+                or self.suggested_id is not None
+            ):
                 raise ValueError(
-                    "CLEAR no admite raw_text ni suggested_id"
+                    "CLEAR no admite raw_text, raw_values ni suggested_id"
                 )
             return self
 
         if self.raw_text is None or not self.raw_text.strip():
             raise ValueError(
                 "ADD, REMOVE y SET requieren raw_text no vacío"
+            )
+
+        if self.field is AppointmentField.SERVICES:
+            for raw_value in self.raw_values:
+                if not raw_value.strip():
+                    raise ValueError(
+                        "raw_values no puede contener valores vacíos"
+                    )
+            if (
+                self.operation in {
+                    ChangeOperation.ADD,
+                    ChangeOperation.REMOVE,
+                }
+                and len(self.raw_values) > 1
+            ):
+                raise ValueError(
+                    "ADD y REMOVE admiten como máximo un raw_value"
+                )
+        elif self.raw_values:
+            raise ValueError(
+                "raw_values solo puede usarse con services"
             )
 
         if self.suggested_id is not None:

@@ -96,6 +96,41 @@ def test_services_accept_all_change_operations(operation):
     assert change.operation is operation
 
 
+def test_service_set_accepts_multiple_raw_values():
+    change = InterpretedChange(
+        field=AppointmentField.SERVICES,
+        operation=ChangeOperation.SET,
+        raw_text="manicure y pedicure",
+        raw_values=["manicure", "pedicure"],
+    )
+
+    assert change.raw_values == ["manicure", "pedicure"]
+
+
+@pytest.mark.parametrize(
+    "operation", [ChangeOperation.ADD, ChangeOperation.REMOVE]
+)
+def test_incremental_service_change_rejects_multiple_raw_values(operation):
+    with pytest.raises(ValidationError, match="como máximo un raw_value"):
+        InterpretedChange(
+            field=AppointmentField.SERVICES,
+            operation=operation,
+            raw_text="manicure y pedicure",
+            raw_values=["manicure", "pedicure"],
+        )
+
+
+@pytest.mark.parametrize("raw_value", ["", "   "])
+def test_service_raw_values_reject_blank_items(raw_value):
+    with pytest.raises(ValidationError, match="valores vacíos"):
+        InterpretedChange(
+            field=AppointmentField.SERVICES,
+            operation=ChangeOperation.SET,
+            raw_text="manicure",
+            raw_values=[raw_value],
+        )
+
+
 @pytest.mark.parametrize(
     "field",
     [
@@ -134,6 +169,25 @@ def test_scalar_fields_reject_incremental_operations(field, operation):
             field=field,
             operation=operation,
             raw_text="original",
+        )
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        AppointmentField.PROFESSIONAL,
+        AppointmentField.DATE,
+        AppointmentField.TIME,
+        AppointmentField.REMOVAL,
+    ],
+)
+def test_raw_values_are_exclusive_to_services(field):
+    with pytest.raises(ValidationError, match="solo puede usarse"):
+        InterpretedChange(
+            field=field,
+            operation=ChangeOperation.SET,
+            raw_text="original",
+            raw_values=["valor"],
         )
 
 
@@ -262,17 +316,23 @@ def test_plain_text_is_not_a_structured_ambiguity():
 
 
 @pytest.mark.parametrize(
-    ("raw_text", "suggested_id"),
-    [("mañana", None), (None, "laura"), ("", None)],
+    ("raw_text", "raw_values", "suggested_id"),
+    [
+        ("mañana", [], None),
+        (None, [], "laura"),
+        ("", [], None),
+        (None, ["manicure"], None),
+    ],
 )
 def test_clear_rejects_raw_text_and_suggested_identifier(
-    raw_text, suggested_id
+    raw_text, raw_values, suggested_id
 ):
     with pytest.raises(ValidationError, match="CLEAR no admite"):
         InterpretedChange(
-            field=AppointmentField.DATE,
+            field=AppointmentField.SERVICES,
             operation=ChangeOperation.CLEAR,
             raw_text=raw_text,
+            raw_values=raw_values,
             suggested_id=suggested_id,
         )
 
