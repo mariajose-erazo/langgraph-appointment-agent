@@ -117,3 +117,16 @@ Esta unidad no normaliza valores, no consulta catálogos ni disponibilidad, no
 crea `AppointmentRequestPatch`, no modifica el estado conversacional y no
 ejecuta reservas, cancelaciones o herramientas. La normalización determinista
 y la integración con LangGraph permanecen como pasos separados.
+
+## Estado acumulado de citas en LangGraph
+
+El grafo procesa cada turno mediante inicialización de la solicitud,
+interpretación estructurada y normalización determinista antes de generar la
+respuesta conversacional. Conserva por `thread_id` la última interpretación,
+el resultado de normalización y el `AppointmentRequest` acumulado.
+
+Los catálogos y el reloj de referencia son entradas obligatorias del contexto
+de ejecución. Un resultado bloqueante conserva la solicitud previa; un cambio
+solo se publica en el estado después de completar exitosamente el merge. El
+checkpointer actual es local y efímero y usa serialización de confianza para
+preservar los dataclasses inmutables del dominio.

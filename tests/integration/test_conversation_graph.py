@@ -1,14 +1,52 @@
 import os
+from datetime import datetime
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
 from cne_agent.graph.workflow import create_conversation_graph
 from cne_agent.graph.nodes import conversation as conversation_module
+from cne_agent.appointments.request import ServiceFamily
+from cne_agent.interpretation.models import TurnInterpretation
+from cne_agent.interpretation.normalizer import (
+    BOGOTA,
+    ProfessionalCatalogEntry,
+    ServiceCatalogEntry,
+)
+
+
+SERVICE_CATALOG = (
+    ServiceCatalogEntry(
+        "manicure-semipermanente",
+        ServiceFamily.MANICURE,
+        "semipermanente",
+        ("manicure semipermanente",),
+    ),
+    ServiceCatalogEntry("pedicure", ServiceFamily.PEDICURE, None, ("pedicure",)),
+)
+PROFESSIONAL_CATALOG = (
+    ProfessionalCatalogEntry("laura", "Laura"),
+)
 
 class FakeConversationChain:
     def invoke(self, input_data):
         return "Respuesta simulada."
+
+
+class FakeInterpretationChain:
+    def invoke(self, input_data):
+        return TurnInterpretation()
+
+
+def graph_context():
+    return {
+        "current_date": "2026-09-22",
+        "business_context": "Servicios de prueba.",
+        "capabilities_context": "No hay capacidades operativas habilitadas.",
+        "service_catalog": SERVICE_CATALOG,
+        "professional_catalog": PROFESSIONAL_CATALOG,
+        "reference_at": datetime(2026, 9, 22, 10, tzinfo=BOGOTA),
+    }
 
 @pytest.mark.integration
 @pytest.mark.skipif(
@@ -24,16 +62,7 @@ def test_graph_preserves_conversation_history():
         }
     }
 
-    context = {
-        "current_date": "2026-09-22",
-        "business_context": """
-Servicios ofrecidos:
-- Manicure semipermanente
-""",
-        "capabilities_context": """
-No hay capacidades operativas habilitadas actualmente.
-""",
-    }
+    context = graph_context()
 
     graph.invoke(
         {
@@ -80,19 +109,11 @@ def test_graph_keeps_threads_isolated(monkeypatch):
         lambda: fake_chain,
     )
 
-    graph = create_conversation_graph()
+    graph = create_conversation_graph(
+        turn_interpretation_chain=FakeInterpretationChain()
+    )
 
-    context = {
-        "current_date": "2026-09-22",
-        "business_context": """
-Servicios ofrecidos:
-- Manicure semipermanente
-- Pedicure
-""",
-        "capabilities_context": """
-No hay capacidades operativas habilitadas actualmente.
-""",
-    }
+    context = graph_context()
 
     config_client_1 = {
         "configurable": {
@@ -185,7 +206,9 @@ def test_graph_preserves_full_state_across_turns(monkeypatch):
         lambda: fake_chain,
     )
 
-    graph = create_conversation_graph()
+    graph = create_conversation_graph(
+        turn_interpretation_chain=FakeInterpretationChain()
+    )
 
     config = {
         "configurable": {
@@ -193,16 +216,7 @@ def test_graph_preserves_full_state_across_turns(monkeypatch):
         }
     }
 
-    context = {
-        "current_date": "2026-09-22",
-        "business_context": """
-Servicios ofrecidos:
-- Manicure semipermanente
-""",
-        "capabilities_context": """
-No hay capacidades operativas habilitadas actualmente.
-""",
-    }
+    context = graph_context()
 
     user_messages = [
         "Primer mensaje.",
