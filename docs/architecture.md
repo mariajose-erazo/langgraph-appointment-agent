@@ -104,3 +104,16 @@ Se utilizará Azure Cosmos DB for NoSQL como servicio unificado de persistencia 
 - **Evolución incremental:** incorporación de tecnologías según las necesidades del MVP.
 
 Las integraciones propuestas estarán sujetas a validación técnica, disponibilidad y costos antes de su implementación.
+
+## Interpretación estructurada de turnos
+
+La unidad `chains/turn_interpretation.py` transforma el mensaje actual de la
+clienta en un `TurnInterpretation` validado por Pydantic mediante la salida
+estructurada nativa de Gemini. El historial reciente se usa únicamente para
+resolver referencias contextuales y la salida representa exclusivamente el
+delta del turno actual.
+
+Esta unidad no normaliza valores, no consulta catálogos ni disponibilidad, no
+crea `AppointmentRequestPatch`, no modifica el estado conversacional y no
+ejecuta reservas, cancelaciones o herramientas. La normalización determinista
+y la integración con LangGraph permanecen como pasos separados.
