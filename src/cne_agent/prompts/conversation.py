@@ -78,6 +78,27 @@ Capacidades operativas autorizadas en esta conversación:
 """.strip()
 
 
+STRUCTURED_TURN_CONTEXT_MESSAGE = """
+Estado estructurado autorizado de la solicitud en progreso:
+
+{appointment_context}
+
+Interpretacion estructurada del turno actual:
+
+{interpretation_context}
+
+Preguntas informativas expresadas en el turno actual:
+
+{information_queries}
+
+Este estado representa informacion recopilada y preferencias, no una reserva,
+cancelacion ni disponibilidad confirmada. Responde todas las preguntas
+informativas solo con el contexto autorizado del negocio. Si ese contexto no
+contiene la respuesta, reconoce brevemente la limitacion. Cuando corresponda,
+resume la solicitud en progreso sin afirmar que una accion operativa ocurrio.
+""".strip()
+
+
 FEW_SHOT_INSTRUCTION_MESSAGE = """
 Los siguientes mensajes son ejemplos ficticios destinados unicamente a mostrar el comportamiento conversacional esperado.
 
@@ -129,6 +150,7 @@ def create_conversation_prompt() -> ChatPromptTemplate:
             ("system", CNE_SYSTEM_MESSAGE),
             ("system", BUSINESS_CONTEXT_MESSAGE),
             ("system", CAPABILITIES_CONTEXT_MESSAGE),
+            ("system", STRUCTURED_TURN_CONTEXT_MESSAGE),
             ("system", FEW_SHOT_INSTRUCTION_MESSAGE),
             FEW_SHOT_PROMPT,
             MessagesPlaceholder(

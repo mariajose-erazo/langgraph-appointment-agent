@@ -130,3 +130,28 @@ de ejecución. Un resultado bloqueante conserva la solicitud previa; un cambio
 solo se publica en el estado después de completar exitosamente el merge. El
 checkpointer actual es local y efímero y usa serialización de confianza para
 preservar los dataclasses inmutables del dominio.
+
+## Routing conversacional posterior a la normalizacion
+
+Despues de `normalize_turn`, una funcion pura selecciona la rama mediante
+conditional edges. Los problemas de configuracion se propagan como errores
+tecnicos. Los resultados `INVALID` y `NEEDS_CLARIFICATION` se atienden con
+nodos deterministas separados; un `SUCCESS` se divide entre respuesta
+informativa y conversacional sin reducir la lista de intenciones a una sola.
+
+Las aclaraciones e invalidaciones generan un `AIMessage` a partir de codigos y
+datos estructurados. No invocan el LLM, no modifican `AppointmentRequest` y no
+ejecutan herramientas. La respuesta exitosa recibe explicitamente la solicitud
+acumulada, la interpretacion del turno, sus preguntas informativas y los
+contextos autorizados. Este nodo puede describir preferencias recopiladas,
+pero no confirma reservas, cancelaciones ni disponibilidad.
+
+Cuando el turno inmediatamente anterior termino en `NEEDS_CLARIFICATION`, el
+nodo de interpretacion conserva referencias locales a la interpretacion y al
+resultado anteriores antes de invocar Gemini para el delta actual. Una funcion
+pura puede reconciliar ambos resultados antes de sobrescribir el estado. En la
+V1 esta reconciliacion se limita a completar deterministicamente una hora de
+12 horas pendiente con una respuesta inequivoca de manana o tarde. Los cambios
+del turno bloqueado se reintentan juntos, manteniendo la atomicidad; preguntas
+laterales, contradicciones y respuestas no reconocidas no reconstruyen el
+turno anterior.

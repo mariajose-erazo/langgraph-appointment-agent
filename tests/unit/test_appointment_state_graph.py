@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableLambda
@@ -8,7 +8,7 @@ from cne_agent.appointments.request import (
     ProfessionalStatus,
     ServiceFamily,
 )
-from cne_agent.graph.nodes import conversation as conversation_module
+from cne_agent.graph.nodes import success_response as success_response_module
 from cne_agent.graph.workflow import create_conversation_graph
 from cne_agent.interpretation.models import (
     AppointmentField,
@@ -63,7 +63,7 @@ def context():
 
 def graph_with(monkeypatch, *interpretations):
     monkeypatch.setattr(
-        conversation_module,
+        success_response_module,
         "create_conversation_chain",
         lambda: FakeConversationChain(),
     )
@@ -301,3 +301,90 @@ def test_threads_keep_independent_appointment_requests(monkeypatch):
 
     assert first["appointment_request"].services[0].family is ServiceFamily.MANICURE
     assert second["appointment_request"].services[0].family is ServiceFamily.PEDICURE
+
+
+def test_time_clarification_retries_the_blocked_turn_atomically(monkeypatch):
+    graph = graph_with(
+        monkeypatch,
+        TurnInterpretation(
+            intents=[TurnIntent.BOOK_APPOINTMENT],
+            appointment_changes=[
+                change(AppointmentField.SERVICES, ChangeOperation.SET, "manicure"),
+                change(AppointmentField.TIME, ChangeOperation.SET, "a las 3"),
+            ],
+        ),
+        TurnInterpretation(
+            appointment_changes=[
+                change(AppointmentField.TIME, ChangeOperation.SET, "De la tarde")
+            ]
+        ),
+    )
+    config = {"configurable": {"thread_id": "time-clarification"}}
+
+    first = invoke_turn(graph, config, "Quiero manicure a las 3.")
+    assert first["normalization_result"].status is NormalizationStatus.NEEDS_CLARIFICATION
+    assert not first["appointment_request"].services
+
+    second = invoke_turn(graph, config, "De la tarde.")
+    request = second["appointment_request"]
+    assert second["normalization_result"].status is NormalizationStatus.SUCCESS
+    assert len(request.services) == 1
+    assert request.services[0].family is ServiceFamily.MANICURE
+    assert request.schedule.time.resolved_time == time(15, 0)
+
+
+def test_pending_clarification_does_not_rebuild_for_side_question(monkeypatch):
+    graph = graph_with(
+        monkeypatch,
+        TurnInterpretation(
+            appointment_changes=[
+                change(AppointmentField.SERVICES, ChangeOperation.SET, "manicure"),
+                change(AppointmentField.TIME, ChangeOperation.SET, "a las 3"),
+            ]
+        ),
+        TurnInterpretation(
+            intents=[TurnIntent.INFORMATION_QUERY],
+            information_queries=["¿Cuánto cuesta el pedicure?"],
+        ),
+    )
+    config = {"configurable": {"thread_id": "side-question"}}
+    invoke_turn(graph, config, "Quiero manicure a las 3.")
+
+    result = invoke_turn(graph, config, "¿Cuánto cuesta el pedicure?")
+    assert result["normalization_result"].status is NormalizationStatus.SUCCESS
+    assert not result["appointment_request"].services
+    assert result["turn_interpretation"].information_queries == [
+        "¿Cuánto cuesta el pedicure?"
+    ]
+
+
+def test_pending_clarification_is_isolated_by_thread(monkeypatch):
+    graph = graph_with(
+        monkeypatch,
+        TurnInterpretation(
+            appointment_changes=[
+                change(AppointmentField.SERVICES, ChangeOperation.SET, "manicure"),
+                change(AppointmentField.TIME, ChangeOperation.SET, "a las 3"),
+            ]
+        ),
+        TurnInterpretation(
+            appointment_changes=[
+                change(AppointmentField.TIME, ChangeOperation.SET, "De la tarde")
+            ]
+        ),
+    )
+    invoke_turn(
+        graph,
+        {"configurable": {"thread_id": "pending-one"}},
+        "Quiero manicure a las 3.",
+    )
+    other = invoke_turn(
+        graph,
+        {"configurable": {"thread_id": "clean-two"}},
+        "De la tarde.",
+    )
+    assert not other["appointment_request"].services
+    assert (
+        other["normalization_result"].status
+        is NormalizationStatus.NEEDS_CLARIFICATION
+    )

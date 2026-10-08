@@ -8,7 +8,7 @@ from cne_agent.appointments.request import (
     ProfessionalStatus,
     ServiceFamily,
 )
-from cne_agent.graph.nodes import conversation as conversation_module
+from cne_agent.graph.nodes import success_response as success_response_module
 from cne_agent.graph.workflow import create_conversation_graph
 from cne_agent.interpretation.normalizer import (
     BOGOTA,
@@ -29,7 +29,7 @@ class FakeConversationChain:
 )
 def test_real_gemini_graph_accumulates_request_across_turns(monkeypatch):
     monkeypatch.setattr(
-        conversation_module,
+        success_response_module,
         "create_conversation_chain",
         lambda: FakeConversationChain(),
     )

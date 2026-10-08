@@ -19,6 +19,9 @@ def test_conversation_prompt_formats_expected_messages():
         current_date="2026-09-17",
         business_context="""Servicios ofrecidos:- Manicure semipermanente""",
         capabilities_context="""No hay capacidades operativas habilitadas actualmente.""",
+        appointment_context="servicios: manicure",
+        interpretation_context="intenciones del turno: information_query",
+        information_queries="Se puede pagar en cuotas?",
         history=history,
         user_input="Se puede pagar en cuotas?",
     )
@@ -37,7 +40,11 @@ def test_conversation_prompt_formats_expected_messages():
     assert "no hay capacidades operativas habilitadas" in messages[2].content.lower()
 
     assert isinstance(messages[3], SystemMessage)
-    assert "ejemplos ficticios" in messages[3].content.lower()
+    assert "solicitud en progreso" in messages[3].content.lower()
+    assert "servicios: manicure" in messages[3].content.lower()
+
+    assert isinstance(messages[4], SystemMessage)
+    assert "ejemplos ficticios" in messages[4].content.lower()
 
     # Instrucción que identifica el few-shot como ficticio
     assert any(
@@ -76,6 +83,9 @@ def test_conversation_prompt_works_without_history():
         capabilities_context="""
     No hay capacidades operativas habilitadas actualmente.
     """,
+        appointment_context="sin servicios indicados",
+        interpretation_context="intenciones del turno: ninguna",
+        information_queries="ninguna",
         user_input="Hola, quiero informacion sobre manicure semipermanente.",
     )
     assert isinstance(messages[2], SystemMessage)
@@ -90,4 +100,4 @@ def test_conversation_prompt_works_without_history():
     assert (
         messages[-1].content
         == "Hola, quiero informacion sobre manicure semipermanente."
-    )    
+    )

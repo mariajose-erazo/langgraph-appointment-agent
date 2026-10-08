@@ -23,6 +23,9 @@ Servicios ofrecidos por Cne By Nails:
             "capabilities_context": """
 No hay capacidades operativas habilitadas actualmente.
 """,
+            "appointment_context": "sin servicios indicados",
+            "interpretation_context": "intenciones del turno: information_query",
+            "information_queries": "que servicios ofrecen?",
             "history": [],
             "user_input": "Hola, que servicios ofrecen?",
         }

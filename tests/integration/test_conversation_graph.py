@@ -5,7 +5,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
 from cne_agent.graph.workflow import create_conversation_graph
-from cne_agent.graph.nodes import conversation as conversation_module
+from cne_agent.graph.nodes import success_response as success_response_module
 from cne_agent.appointments.request import ServiceFamily
 from cne_agent.interpretation.models import TurnInterpretation
 from cne_agent.interpretation.normalizer import (
@@ -104,7 +104,7 @@ def test_graph_keeps_threads_isolated(monkeypatch):
     fake_chain = FakeConversationChain()
 
     monkeypatch.setattr(
-        conversation_module,
+        success_response_module,
         "create_conversation_chain",
         lambda: fake_chain,
     )
@@ -201,7 +201,7 @@ def test_graph_preserves_full_state_across_turns(monkeypatch):
     fake_chain = FakeConversationChain()
 
     monkeypatch.setattr(
-        conversation_module,
+        success_response_module,
         "create_conversation_chain",
         lambda: fake_chain,
     )
