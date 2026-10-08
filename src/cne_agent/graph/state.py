@@ -4,6 +4,8 @@ from typing import TypedDict
 from langgraph.graph import MessagesState
 
 from cne_agent.appointments.request import AppointmentRequest
+from cne_agent.appointments.readiness import AppointmentReadinessResult
+from cne_agent.appointments.scheduling import AvailabilityResult
 from cne_agent.interpretation.models import TurnInterpretation
 from cne_agent.interpretation.normalizer import (
     NormalizationResult,
@@ -16,6 +18,8 @@ class ConversationState(MessagesState):
     turn_interpretation: TurnInterpretation | None
     appointment_request: AppointmentRequest | None
     normalization_result: NormalizationResult | None
+    appointment_readiness: AppointmentReadinessResult | None
+    availability_result: AvailabilityResult | None
 
 
 class ConversationContext(TypedDict):

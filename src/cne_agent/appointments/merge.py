@@ -169,6 +169,8 @@ def _apply_rank_operations(ranked, operations):
 
 
 def _service_identity(mention: ServiceMention) -> tuple[object, ...]:
+    if mention.canonical_id is not None:
+        return ("canonical_id", mention.canonical_id)
     if mention.family is ServiceFamily.UNRESOLVED:
         return ("raw_text", mention.raw_text)
     return ("family", mention.family, mention.variant_text)

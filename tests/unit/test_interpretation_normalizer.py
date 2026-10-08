@@ -521,6 +521,7 @@ def test_longer_service_alias_wins_over_contained_generic_alias():
     mention = result.patch.service_operations[0].mention
     assert mention.family is ServiceFamily.MANICURE
     assert mention.variant_text == "semipermanente"
+    assert mention.canonical_id == "manicure-semi"
 
 
 def test_removal_addon_is_valid_when_a_service_is_added():

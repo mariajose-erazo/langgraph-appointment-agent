@@ -1,6 +1,10 @@
 """Routing determinista posterior a la normalizacion."""
 
 from cne_agent.graph.state import ConversationState
+from cne_agent.appointments.readiness import (
+    AppointmentReadinessResult,
+    AppointmentReadinessStatus,
+)
 from cne_agent.interpretation.models import TurnIntent, TurnInterpretation
 from cne_agent.interpretation.normalizer import (
     NormalizationIssueKind,
@@ -30,9 +34,26 @@ def route_after_normalization(state: ConversationState) -> str:
     interpretation = state.get("turn_interpretation")
     if not isinstance(interpretation, TurnInterpretation):
         raise TypeError("turn_interpretation es obligatorio para enrutar")
-    if (
-        TurnIntent.INFORMATION_QUERY in interpretation.intents
-        or bool(interpretation.information_queries)
-    ):
-        return "success_information"
-    return "success_conversation"
+    return "success"
+
+
+def route_after_success(state: ConversationState) -> str:
+    interpretation = state.get("turn_interpretation")
+    if not isinstance(interpretation, TurnInterpretation):
+        raise TypeError("turn_interpretation es obligatorio para enrutar")
+    operational = {
+        TurnIntent.CHECK_AVAILABILITY,
+        TurnIntent.BOOK_APPOINTMENT,
+    }
+    return "readiness" if operational.intersection(interpretation.intents) else "response"
+
+
+def route_after_readiness(state: ConversationState) -> str:
+    result = state.get("appointment_readiness")
+    if not isinstance(result, AppointmentReadinessResult):
+        raise TypeError("appointment_readiness es obligatorio para enrutar")
+    if result.status is AppointmentReadinessStatus.READY:
+        return "availability"
+    if result.status is AppointmentReadinessStatus.MISSING_INFORMATION:
+        return "missing"
+    raise RuntimeError("estado de readiness desconocido")

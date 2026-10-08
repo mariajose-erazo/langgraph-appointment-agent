@@ -4,6 +4,10 @@ from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
 
 from cne_agent.appointments.request import AppointmentRequest
+from cne_agent.appointments.scheduling import (
+    AvailabilityResult,
+    AvailabilityStatus,
+)
 from cne_agent.chains.conversation import create_conversation_chain
 from cne_agent.graph.history import trim_conversation_history
 from cne_agent.graph.state import ConversationContext, ConversationState
@@ -42,6 +46,9 @@ def success_response(
             "appointment_context": _format_request(request),
             "interpretation_context": _format_interpretation(interpretation),
             "information_queries": _format_queries(interpretation),
+            "availability_context": _format_availability(
+                state.get("availability_result")
+            ),
             "history": trim_conversation_history(messages[:-1]),
             "user_input": messages[-1].content,
         }
@@ -78,3 +85,21 @@ def _format_interpretation(interpretation: TurnInterpretation) -> str:
 
 def _format_queries(interpretation: TurnInterpretation) -> str:
     return "\n".join(interpretation.information_queries) or "ninguna"
+
+
+def _format_availability(result: object) -> str:
+    if result is None:
+        return "no se consulto disponibilidad en este turno"
+    if not isinstance(result, AvailabilityResult):
+        raise TypeError("availability_result debe ser AvailabilityResult")
+    when = result.requested_start.isoformat()
+    if result.status is AvailabilityStatus.AVAILABLE:
+        ids = ", ".join(option.professional_id for option in result.available_options)
+        return (
+            f"disponibilidad confirmada para {when}; profesionales disponibles: "
+            f"{ids}; esto no es una reserva ni una confirmacion de cita"
+        )
+    return (
+        f"sin disponibilidad para {when}; motivo seguro: {result.reason.value}; "
+        "no revelar citas ni datos de otras clientas"
+    )

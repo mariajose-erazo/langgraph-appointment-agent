@@ -51,13 +51,18 @@ def runtime_context(**overrides):
 
 def test_initializer_creates_request_once_and_never_replaces_it():
     assert initialize_appointment_request({"messages": []}) == {
-        "appointment_request": AppointmentRequest()
+        "appointment_request": AppointmentRequest(),
+        "appointment_readiness": None,
+        "availability_result": None,
     }
 
     existing = AppointmentRequest()
     assert initialize_appointment_request(
         {"messages": [], "appointment_request": existing}
-    ) == {}
+    ) == {
+        "appointment_readiness": None,
+        "availability_result": None,
+    }
 
 
 def test_interpret_node_separates_current_turn_from_history():

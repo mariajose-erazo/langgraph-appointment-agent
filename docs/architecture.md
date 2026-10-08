@@ -155,3 +155,37 @@ V1 esta reconciliacion se limita a completar deterministicamente una hora de
 del turno bloqueado se reintentan juntos, manteniendo la atomicidad; preguntas
 laterales, contradicciones y respuestas no reconocidas no reconstruyen el
 turno anterior.
+
+## Readiness y consulta determinista de disponibilidad
+
+Las intenciones `CHECK_AVAILABILITY` y `BOOK_APPOINTMENT` atraviesan una capa
+de readiness después de una normalización exitosa. Esta capa pura exige un
+servicio con identidad canónica (o retiro independiente), fecha y hora exactas
+y una profesional resuelta o la selección explícita `ANY`. Un periodo horario
+no equivale a una hora exacta. La ausencia de retiro no bloquea la consulta y
+se conserva como `UNSPECIFIED`; operacionalmente no agrega duración en V1.
+
+Una solicitud incompleta termina en una pregunta determinista y no consulta la
+agenda. Una solicitud lista se transforma en `ScheduleQuery`. El puerto
+`AvailabilityProvider` solo devuelve un `ScheduleSnapshot`: profesionales,
+citas, almuerzos y cierres autorizados. No interpreta lenguaje, no calcula
+disponibilidad y no ofrece operaciones de creación o reserva.
+
+El dominio suma las duraciones de las definiciones operacionales enlazadas por
+`canonical_id`, agrega 15 minutos para retiro `ADDON` y un único buffer final
+de 10 minutos. Evalúa intervalos semiabiertos y aplica el buffer tanto frente a
+la cita anterior como frente a una cita posterior. Lunes a sábado operan de
+08:00 a 18:00; domingos y cierres inyectados no operan. Los almuerzos son
+bloqueos de 60 minutos. `SCHEDULED` y `COMPLETED` bloquean; `CANCELLED` no.
+
+Para `ANY` se evalúan todas las profesionales autorizadas con las mismas reglas
+y se devuelven todas las disponibles en orden estable por ID. Ese orden no es
+un ranking y no asigna automáticamente una profesional. No se buscan horarios
+alternativos en esta etapa.
+
+`appointment_readiness` y `availability_result` son resultados derivados del
+último turno. LangGraph los limpia al comenzar el turno siguiente y el
+checkpointer los aísla por `thread_id`. Un resultado de disponibilidad nunca se
+reutiliza como garantía para reservar. `BOOK_APPOINTMENT` realiza exactamente
+la misma consulta de solo lectura que `CHECK_AVAILABILITY`; la reserva real
+permanece fuera del alcance de esta etapa.

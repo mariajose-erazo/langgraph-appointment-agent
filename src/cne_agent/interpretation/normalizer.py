@@ -507,7 +507,12 @@ def _normalize_services(change, index, by_name):
             )
         ]
     mentions = tuple(
-        ServiceMention(raw, entry.family, entry.variant_text)
+        ServiceMention(
+            raw,
+            entry.family,
+            entry.variant_text,
+            canonical_id=entry.canonical_id,
+        )
         for raw, entry in resolved
     )
     if change.operation is ChangeOperation.SET:

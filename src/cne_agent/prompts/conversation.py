@@ -91,8 +91,14 @@ Preguntas informativas expresadas en el turno actual:
 
 {information_queries}
 
+Resultado autorizado de disponibilidad del turno actual:
+
+{availability_context}
+
 Este estado representa informacion recopilada y preferencias, no una reserva,
-cancelacion ni disponibilidad confirmada. Responde todas las preguntas
+ni cancelacion confirmada. La disponibilidad solo puede afirmarse cuando el
+resultado autorizado anterior la confirma. Nunca conviertas disponibilidad en
+una reserva. Responde todas las preguntas
 informativas solo con el contexto autorizado del negocio. Si ese contexto no
 contiene la respuesta, reconoce brevemente la limitacion. Cuando corresponda,
 resume la solicitud en progreso sin afirmar que una accion operativa ocurrio.
@@ -159,6 +165,8 @@ def create_conversation_prompt() -> ChatPromptTemplate:
             ),
             ("human", "{user_input}"),
         ]
+    ).partial(
+        availability_context="no se consulto disponibilidad en este turno"
     )
 
 

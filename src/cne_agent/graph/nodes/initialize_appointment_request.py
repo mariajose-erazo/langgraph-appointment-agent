@@ -6,9 +6,13 @@ from cne_agent.graph.state import ConversationState
 
 def initialize_appointment_request(
     state: ConversationState,
-) -> dict[str, AppointmentRequest]:
+) -> dict[str, object]:
     """Crea la solicitud inicial sin sobrescribir una solicitud existente."""
 
-    if state.get("appointment_request") is not None:
-        return {}
-    return {"appointment_request": AppointmentRequest()}
+    updates: dict[str, object] = {
+        "appointment_readiness": None,
+        "availability_result": None,
+    }
+    if state.get("appointment_request") is None:
+        updates["appointment_request"] = AppointmentRequest()
+    return updates

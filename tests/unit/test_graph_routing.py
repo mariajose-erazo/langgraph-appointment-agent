@@ -56,7 +56,7 @@ def test_routes_success_with_information_without_discarding_other_intents():
     )
     assert (
         route_after_normalization(state(result, interpretation))
-        == "success_information"
+        == "success"
     )
 
 
@@ -65,7 +65,7 @@ def test_routes_other_success_to_conversation():
         NormalizationStatus.SUCCESS,
         AppointmentRequestPatch(),
     )
-    assert route_after_normalization(state(result)) == "success_conversation"
+    assert route_after_normalization(state(result)) == "success"
 
 
 def test_configuration_issue_is_a_technical_error():

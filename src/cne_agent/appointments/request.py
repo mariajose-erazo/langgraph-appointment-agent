@@ -85,6 +85,8 @@ def _require_tuple(value: object, field_name: str) -> None:
 
 
 def _service_identity(mention: ServiceMention) -> tuple[object, ...]:
+    if mention.canonical_id is not None:
+        return ("canonical_id", mention.canonical_id)
     if mention.family is ServiceFamily.UNRESOLVED:
         return ("raw_text", mention.raw_text)
     return ("family", mention.family, mention.variant_text)
@@ -137,6 +139,7 @@ class ServiceMention:
     raw_text: str
     family: ServiceFamily
     variant_text: str | None = None
+    canonical_id: str | None = None
 
     def __post_init__(self) -> None:
         _require_text(self.raw_text, "raw_text")
@@ -144,12 +147,17 @@ class ServiceMention:
             raise TypeError("family debe ser ServiceFamily")
         if self.variant_text is not None:
             _require_text(self.variant_text, "variant_text")
+        if self.canonical_id is not None:
+            _require_text(self.canonical_id, "canonical_id")
         if (
             self.family is ServiceFamily.UNRESOLVED
-            and self.variant_text is not None
+            and (
+                self.variant_text is not None
+                or self.canonical_id is not None
+            )
         ):
             raise ValueError(
-                "un servicio unresolved no puede tener variant_text"
+                "un servicio unresolved no puede tener variante ni canonical_id"
             )
 
 
