@@ -10,6 +10,7 @@ from cne_agent.appointments.scheduling import (
     ProfessionalScope,
     ProfessionalScopeKind,
     ScheduleBlock,
+    ScheduleBlockKind,
     ScheduleQuery,
     ScheduleSnapshot,
     SchedulingPolicy,
@@ -130,6 +131,23 @@ def test_any_returns_all_free_professionals_in_stable_order():
     value = query(ids=("valentina", "laura"))
     result = evaluate_availability(value, snapshot(ids=("valentina", "laura")), policy())
     assert [item.professional_id for item in result.available_options] == ["laura", "valentina"]
+
+
+def test_any_accepts_authorized_subset_from_provider():
+    value = query(ids=("laura", "valentina"))
+    result = evaluate_availability(value, snapshot(ids=("valentina",)), policy())
+    assert [item.professional_id for item in result.available_options] == ["valentina"]
+
+
+def test_non_lunch_block_uses_safe_generic_reason():
+    block = ScheduleBlock(
+        "laura",
+        at(15),
+        at(17),
+        ScheduleBlockKind.ABSENCE,
+    )
+    result = evaluate_availability(query(), snapshot(lunches=(block,)), policy())
+    assert result.reason is UnavailabilityReason.SCHEDULE_BLOCK
 
 
 def test_specific_does_not_fall_back_and_any_can_find_another():

@@ -18,6 +18,13 @@ class ProfessionalScopeKind(StrEnum):
     ANY = "any"
 
 
+class ScheduleBlockKind(StrEnum):
+    LUNCH = "lunch"
+    ABSENCE = "absence"
+    VACATION = "vacation"
+    OTHER = "other"
+
+
 @dataclass(frozen=True)
 class ServiceDefinition:
     canonical_id: str
@@ -67,10 +74,16 @@ class ScheduleBlock:
     professional_id: str
     starts_at: datetime
     ends_at: datetime
+    kind: ScheduleBlockKind = ScheduleBlockKind.LUNCH
 
     def __post_init__(self) -> None:
         _validate_interval(self.starts_at, self.ends_at)
-        if self.ends_at - self.starts_at != timedelta(minutes=60):
+        if not isinstance(self.kind, ScheduleBlockKind):
+            raise TypeError("kind debe ser ScheduleBlockKind")
+        if (
+            self.kind is ScheduleBlockKind.LUNCH
+            and self.ends_at - self.starts_at != timedelta(minutes=60)
+        ):
             raise ValueError("el bloqueo de almuerzo debe durar 60 minutos")
 
 
@@ -78,7 +91,7 @@ class ScheduleBlock:
 class ScheduleSnapshot:
     professional_ids: tuple[str, ...]
     appointments: tuple[ExistingAppointment, ...] = ()
-    lunch_blocks: tuple[ScheduleBlock, ...] = ()
+    schedule_blocks: tuple[ScheduleBlock, ...] = ()
     closed_dates: frozenset[date] = frozenset()
 
 
@@ -102,6 +115,7 @@ class UnavailabilityReason(StrEnum):
     CLOSED_DAY = "closed_day"
     OUTSIDE_BUSINESS_HOURS = "outside_business_hours"
     LUNCH_BLOCK = "lunch_block"
+    SCHEDULE_BLOCK = "schedule_block"
     APPOINTMENT_CONFLICT = "appointment_conflict"
     NO_PROFESSIONAL_AVAILABLE = "no_professional_available"
 
@@ -161,10 +175,16 @@ def evaluate_availability(
     start = datetime.combine(query.requested_date, query.requested_time, policy.timezone)
     service_end = start + duration
     occupied_until = service_end + policy.buffer
-    candidates = tuple(sorted(set(query.professional_scope.professional_ids)))
+    requested_ids = set(query.professional_scope.professional_ids)
     snapshot_ids = set(snapshot.professional_ids)
-    if not set(candidates) <= snapshot_ids:
-        raise RuntimeError("el snapshot omite profesionales solicitadas")
+    if query.professional_scope.kind is ProfessionalScopeKind.SPECIFIC:
+        if not requested_ids <= snapshot_ids:
+            raise RuntimeError("el snapshot no contiene la profesional especifica")
+        candidates = tuple(sorted(requested_ids))
+    else:
+        if not snapshot_ids <= requested_ids:
+            raise RuntimeError("el snapshot contiene profesionales no solicitadas")
+        candidates = tuple(sorted(snapshot_ids))
 
     if query.requested_date.weekday() == 6 or query.requested_date in snapshot.closed_dates:
         return _unavailable(start, duration, candidates, UnavailabilityReason.CLOSED_DAY)
@@ -204,16 +224,24 @@ def evaluate_availability(
             tuple(available),
             tuple(unavailable),
         )
-    reason = reasons[0] if len(set(reasons)) == 1 else UnavailabilityReason.NO_PROFESSIONAL_AVAILABLE
+    reason = (
+        reasons[0]
+        if reasons and len(set(reasons)) == 1
+        else UnavailabilityReason.NO_PROFESSIONAL_AVAILABLE
+    )
     return _unavailable(start, duration, tuple(unavailable), reason)
 
 
 def _conflict_reason(professional_id, start, occupied_until, snapshot, buffer):
-    for block in snapshot.lunch_blocks:
+    for block in snapshot.schedule_blocks:
         if block.professional_id == professional_id and _overlaps(
             start, occupied_until, block.starts_at, block.ends_at
         ):
-            return UnavailabilityReason.LUNCH_BLOCK
+            return (
+                UnavailabilityReason.LUNCH_BLOCK
+                if block.kind is ScheduleBlockKind.LUNCH
+                else UnavailabilityReason.SCHEDULE_BLOCK
+            )
     for appointment in snapshot.appointments:
         if (
             appointment.professional_id == professional_id

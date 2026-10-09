@@ -2,3 +2,4 @@ langchain-google-genai==4.4.0
 python-dotenv==1.2.3
 pytest==9.1.1
 langgraph==1.2.12
+azure-cosmos==4.17.1

@@ -189,3 +189,44 @@ checkpointer los aísla por `thread_id`. Un resultado de disponibilidad nunca se
 reutiliza como garantía para reservar. `BOOK_APPOINTMENT` realiza exactamente
 la misma consulta de solo lectura que `CHECK_AVAILABILITY`; la reserva real
 permanece fuera del alcance de esta etapa.
+
+## Persistencia operacional con Azure Cosmos DB
+
+La agenda persistente se integra mediante `CosmosAvailabilityProvider`, que
+implementa el mismo puerto usado por el provider in-memory. LangGraph recibe el
+provider por composición y no conoce la tecnología de persistencia. Cosmos
+solo suministra hechos operacionales validados; duración, buffer, horario,
+solapamientos y disponibilidad continúan siendo reglas Python.
+
+La cuenta utiliza tres containers. `professionals` tiene partition key
+`/business_id`; `schedule_entries` reúne citas y bloqueos individuales con
+partition key `/schedule_key`, cuyo valor es `business_id#YYYY-MM-DD`; y
+`business_closures` usa `/business_id`. Todas las lecturas de agenda indican
+explícitamente la partición diaria y evitan consultas cross-partition en el
+camino normal.
+
+Las fechas de negocio se almacenan como `YYYY-MM-DD` de Bogotá. Los instantes
+se almacenan en UTC con timezone explícita y el adapter valida que correspondan
+a la fecha local declarada. Las citas persisten `service_ends_at` como hecho
+histórico, pero no buffer, `occupied_until` ni resultados de disponibilidad.
+
+Los bloqueos individuales pueden ser `lunch`, `absence`, `vacation` u `other`.
+Todos bloquean; solo `lunch` exige exactamente 60 minutos y expone el motivo
+específico de almuerzo. Los festivos y cierres globales son documentos
+separados y nunca se infieren.
+
+Para `ANY`, Cosmos filtra el subconjunto de profesionales conocidas que está
+activo y autorizado para todos los servicios. Python evalúa la disponibilidad
+de todas ellas, sin ranking ni selección automática. Para una profesional
+específica, inexistencia, inactividad o falta de autorización son errores de
+precondición y no una agenda vacía.
+
+La configuración proviene exclusivamente de variables `CNE_COSMOS_*`. En V1
+se admite autenticación por key y la fábrica acepta un credential inyectado
+para permitir una futura adopción de `DefaultAzureCredential`. La aplicación
+no crea infraestructura ni ejecuta seeds al arrancar; bootstrap y seed son
+scripts manuales e independientes.
+
+Una consulta de disponibilidad es una observación temporal, no un lock ni una
+reserva. Una futura operación de booking deberá volver a validar frente a
+concurrencia antes de persistir.

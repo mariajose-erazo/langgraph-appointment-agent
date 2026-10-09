@@ -1,0 +1,1 @@
+"""Cosmos adapter unit tests."""

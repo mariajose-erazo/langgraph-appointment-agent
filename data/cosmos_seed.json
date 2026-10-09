@@ -1,0 +1,78 @@
+{
+  "business_id": "cne-dev",
+  "professionals": [
+    {
+      "id": "laura",
+      "document_type": "professional",
+      "business_id": "cne-dev",
+      "professional_id": "laura",
+      "display_name": "Laura",
+      "active": true,
+      "supported_service_ids": ["manicure", "pedicure", "removal-independent"],
+      "created_at": "2026-10-08T12:00:00Z",
+      "updated_at": "2026-10-08T12:00:00Z",
+      "schema_version": 1
+    },
+    {
+      "id": "valentina",
+      "document_type": "professional",
+      "business_id": "cne-dev",
+      "professional_id": "valentina",
+      "display_name": "Valentina",
+      "active": true,
+      "supported_service_ids": ["manicure", "pedicure", "removal-independent"],
+      "created_at": "2026-10-08T12:00:00Z",
+      "updated_at": "2026-10-08T12:00:00Z",
+      "schema_version": 1
+    },
+    {
+      "id": "maria_jose",
+      "document_type": "professional",
+      "business_id": "cne-dev",
+      "professional_id": "maria_jose",
+      "display_name": "Maria Jose",
+      "active": true,
+      "supported_service_ids": ["manicure", "pedicure", "removal-independent"],
+      "created_at": "2026-10-08T12:00:00Z",
+      "updated_at": "2026-10-08T12:00:00Z",
+      "schema_version": 1
+    }
+  ],
+  "schedule_entries": [
+    {
+      "id": "appt_dev_001",
+      "document_type": "appointment",
+      "business_id": "cne-dev",
+      "business_date": "2026-10-09",
+      "schedule_key": "cne-dev#2026-10-09",
+      "appointment_id": "appt_dev_001",
+      "professional_id": "laura",
+      "service_ids": ["manicure"],
+      "starts_at": "2026-10-09T19:00:00Z",
+      "service_ends_at": "2026-10-09T20:00:00Z",
+      "status": "scheduled",
+      "removal_status": "unspecified",
+      "removal_role": "unspecified",
+      "created_at": "2026-10-08T12:00:00Z",
+      "updated_at": "2026-10-08T12:00:00Z",
+      "schema_version": 1
+    },
+    {
+      "id": "block_dev_001",
+      "document_type": "schedule_block",
+      "business_id": "cne-dev",
+      "business_date": "2026-10-09",
+      "schedule_key": "cne-dev#2026-10-09",
+      "block_id": "block_dev_001",
+      "professional_id": "valentina",
+      "block_type": "lunch",
+      "starts_at": "2026-10-09T17:00:00Z",
+      "ends_at": "2026-10-09T18:00:00Z",
+      "active": true,
+      "created_at": "2026-10-08T12:00:00Z",
+      "updated_at": "2026-10-08T12:00:00Z",
+      "schema_version": 1
+    }
+  ],
+  "business_closures": []
+}
